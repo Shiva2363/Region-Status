@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atlas Ops — Regional Status</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0A0F1C;
+    --panel: #121B2E;
+    --panel-raised: #1A2540;
+    --hairline: #263255;
+    --text-primary: #EDF1F7;
+    --text-muted: #7C89A6;
+    --accent: #A78BFA;
+    --green: #34D399;
+    --amber: #FBBF24;
+    --red: #F87171;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--ink);
+    background-image:
+      linear-gradient(var(--hairline) 1px, transparent 1px),
+      linear-gradient(90deg, var(--hairline) 1px, transparent 1px);
+    background-size: 48px 48px;
+    background-position: -1px -1px;
+    color: var(--text-primary);
+    font-family: 'IBM Plex Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+  }
+
+  .console { width: 100%; max-width: 560px; }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-bottom: 24px;
+  }
+
+  .region-strip {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .region-pill {
+    background: var(--panel-raised);
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    padding: 10px 4px 8px;
+    text-align: center;
+    cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-muted);
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .region-pill:hover { border-color: var(--accent); }
+  .region-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .region-pill.active { background: var(--panel); border-color: var(--accent); color: var(--text-primary); }
+  .region-pill .num { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+  .region-pill .dot { width: 7px; height: 7px; border-radius: 50%; margin: 0 auto; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    border-radius: 16px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .panel::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.6;
+  }
+
+  .status-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .signal { position: relative; width: 14px; height: 14px; flex-shrink: 0; }
+  .signal .core { width: 14px; height: 14px; border-radius: 50%; position: relative; z-index: 1; }
+  .signal .ping {
+    position: absolute; top: 0; left: 0; width: 14px; height: 14px; border-radius: 50%;
+    animation: ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+
+  @keyframes ping {
+    0% { transform: scale(1); opacity: 0.7; }
+    75%, 100% { transform: scale(2.6); opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) { .signal .ping { animation: none; } }
+
+  .status-text { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; }
+  .region-name { font-size: 15px; color: var(--text-muted); margin-left: auto; }
+
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    margin-top: 22px;
+  }
+
+  .section-label:first-of-type { margin-top: 0; }
+
+  ul.accomplishments { list-style: none; }
+  ul.accomplishments li { font-size: 14px; padding-left: 22px; position: relative; margin-bottom: 8px; line-height: 1.4; }
+  ul.accomplishments li::before {
+    content: "✓"; position: absolute; left: 0; color: var(--green);
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+  }
+
+  .milestone-box {
+    background: var(--panel-raised);
+    border: 1px solid var(--hairline);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+
+  .milestone-date { font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; color: var(--text-primary); }
+  .milestone-label { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+  .footer {
+    display: flex; justify-content: space-between; margin-top: 18px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-muted);
+  }
+
+  .loading, .error { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--text-muted); padding: 20px 0; }
+  .error { color: var(--red); }
+
+  @media (max-width: 420px) {
+    .region-pill .num { font-size: 12px; }
+    h1 { font-size: 19px; }
+  }
+</style>
+</head>
+<body>
+  <div class="console">
+    <div class="eyebrow">Project Atlas · Live Feed</div>
+    <h1>Regional Rollout Status</h1>
+
+    <div class="region-strip" id="regionStrip"></div>
+
+    <div class="panel" id="panel">
+      <div class="loading">Loading region_status.csv…</div>
+    </div>
+  </div>
+
+<script>
+  const STATUS_COLOR = { green: 'var(--green)', yellow: 'var(--amber)', red: 'var(--red)' };
+  const STATUS_LABEL = { green: 'ON TRACK', yellow: 'AT RISK', red: 'BLOCKED' };
+
+  let regions = [];
+  let activeIndex = 0;
+
+  function parseCSV(text) {
+    const lines = text.trim().split(/\r?\n/);
+    const headers = splitCSVLine(lines[0]);
+    return lines.slice(1).filter(l => l.trim().length).map(line => {
+      const values = splitCSVLine(line);
+      const row = {};
+      headers.forEach((h, i) => row[h.trim()] = (values[i] || '').trim());
+      return row;
+    });
+  }
+
+  function splitCSVLine(line) {
+    const result = [];
+    let cur = '', inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQuotes = !inQuotes; }
+      else if (c === ',' && !inQuotes) { result.push(cur); cur = ''; }
+      else { cur += c; }
+    }
+    result.push(cur);
+    return result.map(v => v.replace(/^"|"$/g, ''));
+  }
+
+  function renderStrip() {
+    const strip = document.getElementById('regionStrip');
+    strip.innerHTML = regions.map((r, i) => `
+      <button class="region-pill ${i === activeIndex ? 'active' : ''}" data-index="${i}">
+        <span class="num">R${r.Region.replace(/\D/g, '') || (i + 1)}</span>
+        <span class="dot" style="background:${STATUS_COLOR[r.Status] || '#666'}"></span>
+      </button>
+    `).join('');
+    strip.querySelectorAll('.region-pill').forEach(btn => {
+      btn.addEventListener('click', () => { activeIndex = +btn.dataset.index; renderStrip(); renderPanel(); });
+    });
+  }
+
+  function renderPanel() {
+    const r = regions[activeIndex];
+    const color = STATUS_COLOR[r.Status] || '#666';
+    const accomplishments = [r.Accomplishment_1, r.Accomplishment_2, r.Accomplishment_3].filter(Boolean);
+
+    document.getElementById('panel').innerHTML = `
+      <div class="status-row">
+        <div class="signal">
+          <div class="ping" style="background:${color}"></div>
+          <div class="core" style="background:${color}"></div>
+        </div>
+        <div class="status-text" style="color:${color}">${STATUS_LABEL[r.Status] || r.Status.toUpperCase()}</div>
+        <div class="region-name">${r.Region}</div>
+      </div>
+
+      <div class="section-label">Top Accomplishments</div>
+      <ul class="accomplishments">
+        ${accomplishments.map(a => `<li>${a}</li>`).join('')}
+      </ul>
+
+      <div class="section-label">Next Milestone</div>
+      <div class="milestone-box">
+        <div class="milestone-date">${r.Milestone_Date || '—'}</div>
+        <div class="milestone-label">${r.Milestone_Label || ''}</div>
+      </div>
+
+      <div class="footer">
+        <span>UPDATED ${r.Last_Updated || '—'}</span>
+        <span>SRC: region_status.csv</span>
+      </div>
+    `;
+  }
+
+  fetch('region_status.csv')
+    .then(res => {
+      if (!res.ok) throw new Error('File not found');
+      return res.text();
+    })
+    .then(text => {
+      regions = parseCSV(text);
+      if (!regions.length) throw new Error('No rows parsed');
+      renderStrip();
+      renderPanel();
+    })
+    .catch(err => {
+      document.getElementById('panel').innerHTML = `
+        <div class="error">
+          Couldn't load region_status.csv (${err.message}).<br><br>
+          If you're viewing this file directly on your computer, browsers block
+          local file loads — this works once deployed to Render, or served via
+          any local web server.
+        </div>`;
+    });
+</script>
+</body>
+</html>
